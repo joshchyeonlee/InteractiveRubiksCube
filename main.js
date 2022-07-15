@@ -1,9 +1,14 @@
 import './style.css';
 import * as THREE from 'three';
-import * as TWEEN from '@tweenjs/tween.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { AxesHelper } from 'three';
 
 var scene, camera, renderer, controls, mouse, raycaster, selectedCubeCoord;
+
+const xAxis = new THREE.Vector3(1,0,0).normalize();
+const yAxis = new THREE.Vector3(0,1,0).normalize();
+const zAxis = new THREE.Vector3(0,0,1).normalize();
+
 const cubeArray = [];
 
 function generateCubes(x,y,z){
@@ -34,77 +39,89 @@ function getCubePlane(direction){
     else if (direction === 'x' && cubeArray[i].position.x === selectedCubeCoord.x){
       cubes.push(cubeArray[i]);
     }
+    else if (direction === 'z' && cubeArray[i].position.z === selectedCubeCoord.z){
+      cubes.push(cubeArray[i]);
+    }
   }
 
   return cubes;
 }
 
-// function getCubePlane(plane){
-//   const group = 3;
-//   const cubes = [];
+function getMatrix(dir, radians){
+  if(dir === 'x') return  [[Math.cos(radians), -Math.sin(radians)],[Math.sin(radians), Math.cos(radians)]];
+  else if (dir === 'y') return [[Math.cos(radians), Math.sin(radians)],[-Math.sin(radians), Math.cos(radians)]];
+  else return [[Math.cos(radians), -Math.sin(radians)],[Math.sin(radians), Math.cos(radians)]];
+}
 
-//   let offset = 1;
-//   let skip = 0;
-//   let counter = 0;
-//   let upper = cubeArray.length;
+function getNewCoordinates(curr, dir, radians){
+  const matrix = getMatrix(dir,radians);
+  let x = curr[0] * matrix[0][0] + curr[1] * matrix[0][1];
+  let y = curr[0] * matrix[1][0] + curr[1] * matrix[1][1];
+  if(x === -0) x = 0;
+  if(y === -0) y = 0;
 
-//   switch(plane){
-//     case 'x':
-//       upper = 9;
-//       break;
-//     case 'y':
-//       skip = 6;
-//       break;
-//     case 'z':
-//       offset = 3;
-//       break;
-//   }
+  return[Math.round(x),Math.round(y)];
+}
 
-//   for(let i = 0; i < upper; i += offset){
-//     cubes.push(i);
-//     counter++;
-//     if(counter >= group) {
-//       i += skip;
-//       counter = 0;
-//     }
-//   }
-
-//   return cubes;
-// }
-
-function rotateCube(keypress) {
+function rotateCube(key) {
   const angle = Math.PI/2;
-  var dir, cubes, rot;
+  var dir, cubes, rot, curr;
 
-  switch(keypress){
-    case 'w':
+  switch(key){
+    case 'q': //rotate about x axis cw
+      dir = 'x';
+      rot = - angle;
+      break;
+    case 'w': //rotate about y axis cw
+      dir = 'y';
+      rot = - angle;
+      break;
+    case 'e': //rotate about z axis cw
+      dir = 'z';
+      rot = - angle;
+      break;
+    case 'a': //rotate about x axis ccw
+      dir = 'x';
+      rot = angle;
+      break;
+    case 's': //rotate about y axis ccw
       dir = 'y';
       rot = angle;
       break;
-    case 'a':
-      dir = 'x';
-      rot = - angle;
-      break;
-    case 's':
-      dir = 'y';
-      rot = - angle;
-      break;
-    case 'd':
-      dir = 'x';
+    case 'd': //rotate about z axis ccw
+      dir = 'z';
       rot = angle;
       break;
   }
 
   if (dir){
     cubes = getCubePlane(dir);
-    console.log(cubes);
   } else {
     return;
   }
 
   for(let i = 0; i < cubes.length; i++){
-    if(dir === `x`) cubes[i].rotation.x += rot;
-    else if (dir === 'y') cubes[i].rotation.y += rot;
+    if(dir === 'x') {
+      cubes[i].rotateOnWorldAxis(xAxis, rot);
+      curr = [cubes[i].position.y, cubes[i].position.z];
+      const coord = getNewCoordinates(curr, dir, rot);
+      cubes[i].position.y = coord[0];
+      cubes[i].position.z = coord[1];
+    }
+    else if (dir === 'y') {
+      cubes[i].rotateOnWorldAxis(yAxis, rot);
+      curr = [cubes[i].position.x, cubes[i].position.z];
+      const coord = getNewCoordinates(curr, dir, rot);
+      cubes[i].position.x = coord[0];
+      cubes[i].position.z = coord[1];
+    }
+    else {
+      cubes[i].rotateOnWorldAxis(zAxis, rot);
+      const curr = [cubes[i].position.x, cubes[i].position.y];
+      const coord = getNewCoordinates(curr, dir, rot);
+      cubes[i].position.x = coord[0];
+      cubes[i].position.y = coord[1];
+    }
   }
 }
 
@@ -126,7 +143,8 @@ function initialize() {
   document.body.appendChild(renderer.domElement);
 
   const ambientLight = new THREE.AmbientLight(0xffffff);
-  scene.add(ambientLight);
+  const a = new AxesHelper(10) //x:red y:green, z:blue
+  scene.add(ambientLight, a);
 
   controls = new OrbitControls(camera, renderer.domElement);
 
@@ -139,6 +157,7 @@ function initialize() {
   };
 
   window.addEventListener('keypress', (keypress) => {
+    console.log(keypress.key);
     rotateCube(keypress.key);
   })
 
