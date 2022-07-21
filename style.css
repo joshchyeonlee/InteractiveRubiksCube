@@ -95,3 +95,56 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.info{
+  position: absolute;
+  left: 15px;
+  z-index: 100;
+  display:block;
+}
+
+.heading{
+  top: 15px;
+}
+
+.subheadingTop{
+  top: 145px;
+}
+
+.keysTop{
+  top: 155px;
+  width: 200px;
+}
+
+.subheadingBottom{
+  top: 255px;
+}
+
+.keysBottom{
+  top: 265px;
+  width: 200px;
+}
+
+.general{
+  top: 25px;
+  width: 330px;
+}
+
+.rotate{
+  top: 100px;
+}
+
+.axes{
+  position: absolute;
+  right: 15px;
+  width: 100px;
+  z-index: 100;
+  display:block;
+}
+
+.axesHeader{
+  top: 15px;
+}
+.axesInfo{
+  top: 25px;
+}
