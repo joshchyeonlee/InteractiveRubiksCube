@@ -3,7 +3,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { AxesHelper } from 'three';
 
-var scene, camera, renderer, controls, mouse, raycaster, selectedCubeCoord;
+var scene, camera, renderer, controls, selectedCubeCoord;
+var mouse = new THREE.Vector2();
+var raycaster = new THREE.Raycaster();
 
 const xAxis = new THREE.Vector3(1,0,0).normalize();
 const yAxis = new THREE.Vector3(0,1,0).normalize();
@@ -127,15 +129,10 @@ function rotateCube(key) {
 
 function initialize() {
   scene = new THREE.Scene();
-  
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-  camera.position.set(3,2,3,);
+  scene.background = new THREE.Color(0x222222);
 
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);  
-  });
+  camera = new THREE.PerspectiveCamera(80, window.innerWidth/window.innerHeight, 0.1, 1000);
+  camera.position.set(5,3,5);
 
   renderer = new THREE.WebGLRenderer( { antialias: true} );
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -143,8 +140,8 @@ function initialize() {
   document.body.appendChild(renderer.domElement);
 
   const ambientLight = new THREE.AmbientLight(0xffffff);
-  const a = new AxesHelper(10) //x:red y:green, z:blue
-  scene.add(ambientLight, a);
+  const axesHelper = new AxesHelper(10) //x:red y:green, z:blue
+  scene.add(ambientLight, axesHelper);
 
   controls = new OrbitControls(camera, renderer.domElement);
 
@@ -155,28 +152,6 @@ function initialize() {
       }
     }
   };
-
-  window.addEventListener('keypress', (keypress) => {
-    console.log(keypress.key);
-    rotateCube(keypress.key);
-  })
-
-  mouse = new THREE.Vector2();
- 
-  window.addEventListener('mousemove', (event) => {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-  }, false);
-  
-  raycaster = new THREE.Raycaster();
-
-  window.addEventListener('click', () => {
-    raycaster.setFromCamera(mouse, camera);
-    let intersects = raycaster.intersectObjects(scene.children);
-    if(intersects.length > 0){
-      selectedCubeCoord = intersects[0].object.position;
-    }
-  })
 }
 
 function hoverCube() {
@@ -188,7 +163,6 @@ function hoverCube() {
 
     for(let j = 0; j < materialArr.length; j++){
       if(i === 0) materialArr[j].opacity = 0.5;
-      else materialArr[j].opacity = 1.0;
     }
   }
 }
@@ -196,9 +170,15 @@ function hoverCube() {
 function resetMaterials() {
   for(let i = 0; i < scene.children.length; i++) {
     const arr = scene.children[i].material;
+    const pos = scene.children[i].position;
     if(arr){
       for(let j = 0; j < arr.length; j++) {
-        arr[j].opacity = 1.0;
+        if(pos === selectedCubeCoord){
+          arr[j].opacity = 0.5;
+        }
+        else {
+          arr[j].opacity = 1.0;
+        }
       }
     }
   }
@@ -211,6 +191,30 @@ function animate() {
   hoverCube();
   renderer.render(scene,camera);
 }
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);  
+});
+
+window.addEventListener('keypress', (keypress) => {
+  rotateCube(keypress.key.toLowerCase());
+})
+
+window.addEventListener('mousemove', (event) => {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+}, false);
+
+window.addEventListener('click', () => {
+  raycaster.setFromCamera(mouse, camera);
+  let intersects = raycaster.intersectObjects(scene.children);
+  if(intersects.length > 0){
+    selectedCubeCoord = intersects[0].object.position;
+    intersects[0].object.material.opacity = 0.5;
+  }
+});
 
 initialize();
 animate();
