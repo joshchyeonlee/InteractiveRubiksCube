@@ -32,8 +32,8 @@ function generateCubes(x,y,z){
 }
 
 function getCubePlane(direction){
-
   const cubes = [];
+
   for(let i = 0; i < cubeArray.length; i++){
     if(direction === 'y' && cubeArray[i].position.y === selectedCubeCoord.y) {
       cubes.push(cubeArray[i]);
@@ -49,6 +49,7 @@ function getCubePlane(direction){
   return cubes;
 }
 
+//matrix for updating coordinates
 function getMatrix(dir, radians){
   if(dir === 'x') return  [[Math.cos(radians), -Math.sin(radians)],[Math.sin(radians), Math.cos(radians)]];
   else if (dir === 'y') return [[Math.cos(radians), Math.sin(radians)],[-Math.sin(radians), Math.cos(radians)]];
@@ -57,12 +58,15 @@ function getMatrix(dir, radians){
 
 function getNewCoordinates(curr, dir, radians){
   const matrix = getMatrix(dir,radians);
+  
+  //matrix multiplication to get new coordinates
   let x = curr[0] * matrix[0][0] + curr[1] * matrix[0][1];
   let y = curr[0] * matrix[1][0] + curr[1] * matrix[1][1];
+  
   if(x === -0) x = 0;
   if(y === -0) y = 0;
 
-  return[Math.round(x),Math.round(y)];
+  return[Math.round(x),Math.round(y)];//maybe return a new object with x and y?
 }
 
 function rotateCube(key) {
@@ -96,16 +100,14 @@ function rotateCube(key) {
       break;
   }
 
-  if (dir){
-    cubes = getCubePlane(dir);
-  } else {
-    return;
-  }
+  if (dir)cubes = getCubePlane(dir);
+  else return;
 
   for(let i = 0; i < cubes.length; i++){
     if(dir === 'x') {
       cubes[i].rotateOnWorldAxis(xAxis, rot);
       curr = [cubes[i].position.y, cubes[i].position.z];
+      
       const coord = getNewCoordinates(curr, dir, rot);
       cubes[i].position.y = coord[0];
       cubes[i].position.z = coord[1];
@@ -113,16 +115,44 @@ function rotateCube(key) {
     else if (dir === 'y') {
       cubes[i].rotateOnWorldAxis(yAxis, rot);
       curr = [cubes[i].position.x, cubes[i].position.z];
+      
       const coord = getNewCoordinates(curr, dir, rot);
       cubes[i].position.x = coord[0];
       cubes[i].position.z = coord[1];
     }
     else {
       cubes[i].rotateOnWorldAxis(zAxis, rot);
-      const curr = [cubes[i].position.x, cubes[i].position.y];
-      const coord = getNewCoordinates(curr, dir, rot);
+      curr = [cubes[i].position.x, cubes[i].position.y];
+
+      const coord = getNewCoordinates(curr, dir, rot); //maybe should return an object
       cubes[i].position.x = coord[0];
       cubes[i].position.y = coord[1];
+    }
+  }
+}
+
+function transparentMouseHover() {
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(scene.children);
+
+  for(let i = 0; i < intersects.length; i++) {
+    const materialArr = intersects[i].object.material;
+
+    for(let j = 0; j < materialArr.length; j++){
+      if(i === 0) materialArr[j].opacity = 0.5;
+    }
+  }
+}
+
+function resetMouseHoverMaterials() {
+  for(let i = 0; i < scene.children.length; i++) {
+    const arr = scene.children[i].material;
+    const pos = scene.children[i].position;
+    if(arr){
+      for(let j = 0; j < arr.length; j++) {
+        if(pos === selectedCubeCoord) arr[j].opacity = 0.5;
+        else arr[j].opacity = 1.0;
+      }
     }
   }
 }
@@ -151,44 +181,14 @@ function initialize() {
         generateCubes(i,j,k);
       }
     }
-  };
-}
-
-function hoverCube() {
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(scene.children);
-
-  for(let i = 0; i < intersects.length; i++) {
-    const materialArr = intersects[i].object.material;
-
-    for(let j = 0; j < materialArr.length; j++){
-      if(i === 0) materialArr[j].opacity = 0.5;
-    }
-  }
-}
-
-function resetMaterials() {
-  for(let i = 0; i < scene.children.length; i++) {
-    const arr = scene.children[i].material;
-    const pos = scene.children[i].position;
-    if(arr){
-      for(let j = 0; j < arr.length; j++) {
-        if(pos === selectedCubeCoord){
-          arr[j].opacity = 0.5;
-        }
-        else {
-          arr[j].opacity = 1.0;
-        }
-      }
-    }
   }
 }
 
 function animate() {
   requestAnimationFrame(animate);
-  resetMaterials();
+  resetMouseHoverMaterials();
   controls.update();
-  hoverCube();
+  transparentMouseHover();
   renderer.render(scene,camera);
 }
 
@@ -210,6 +210,7 @@ window.addEventListener('mousemove', (event) => {
 window.addEventListener('click', () => {
   raycaster.setFromCamera(mouse, camera);
   let intersects = raycaster.intersectObjects(scene.children);
+  
   if(intersects.length > 0){
     selectedCubeCoord = intersects[0].object.position;
     intersects[0].object.material.opacity = 0.5;
