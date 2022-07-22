@@ -1,4 +1,4 @@
-# InteractiveRubiksCube
+# Interactive Rubiks Cube
 An interactive Rubiks Cube made with three.js
 
 To run, use `npm run dev` and view local host in browser.
